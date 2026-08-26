@@ -3,3 +3,4 @@ venv
 *.code-workspace
 
 verkehrszeichen.json
+openstreet_raw.gpkg

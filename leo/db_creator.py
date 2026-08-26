@@ -2,29 +2,29 @@ import sqlite3
 import json
 import datetime as dt
 
-con = sqlite3.connect('streets.db')
-cur = con.cursor()
-def creation():
-    
-    cur.execute("DROP TABLE IF EXISTS metadata")
-    cur.execute("DROP TABLE IF EXISTS street_names")
-    cur.execute("DROP TABLE IF EXISTS street_parts")
-    cur.execute("DROP TABLE IF EXISTS street_part_coordinates")
+resCon = sqlite3.connect('streets.db')
+resCur = resCon.cursor()
 
-    cur.execute("""
+def create_db():
+    resCur.execute("DROP TABLE IF EXISTS metadata")
+    resCur.execute("DROP TABLE IF EXISTS street_names")
+    resCur.execute("DROP TABLE IF EXISTS street_parts")
+    resCur.execute("DROP TABLE IF EXISTS street_part_coordinates")
+
+    resCur.execute("""
         CREATE TABLE metadata (
             creation_date TEXT
         )
     """)
     
-    cur.execute("""
+    resCur.execute("""
         CREATE TABLE street_names (
             street_id TEXT PRIMARY KEY,
             street_name TEXT
         )
     """)
     
-    cur.execute("""
+    resCur.execute("""
         CREATE TABLE street_parts (
             str_part_id INTEGER PRIMARY KEY,
             street_id TEXT NOT NULL,
@@ -42,7 +42,7 @@ def creation():
         )
     """)
 
-    cur.execute("""
+    resCur.execute("""
         CREATE TABLE street_part_coordinates (
             str_part_coord_id INTEGER PRIMARY KEY,
             str_part_id INTEGER NOT NULL,
@@ -55,9 +55,32 @@ def creation():
         )
     """)
     
-    con.commit()
+    resCon.commit()
     
-def read_raw_data():
+def read_raw_data_openstreetmap():
+    osmCon = sqlite3.connect('openstreet_raw.gpkg')
+    osmCur = osmCon.cursor()
+    
+    tableNames = osmCur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;").fetchall()
+    tables = []
+    
+    for table in tableNames:
+        tableName = str(table[0])
+        print(tableName)
+        print("-----------")
+        columns = osmCur.execute(f"PRAGMA table_info({tableName})").fetchall()
+        for col in columns:
+            # print('{}{}{}'.format(col[0].ljust(8),col[1].ljust(8),col[2].ljust(8)))
+            print(f"{col[0]:<8}{col[1]:<32}{col[2]:<8}")
+        a = 0
+        # tables.append({
+        #     tableName : osmCur.execute(f"SELECT * FROM {tableName}").fetchall()
+        # })
+    
+    osmCon.close()
+    a=0
+    
+def read_raw_data_leipzig_official():
     with open('../raw.json') as r:
         raw = json.load(r)
 
@@ -95,24 +118,24 @@ def read_raw_data():
     
 def db_filling(street_names, street_parts, street_part_coordinates):
     timestamp = [str(dt.datetime.now()).replace(" ", "T")]
-    cur.execute("INSERT INTO metadata VALUES(?)", timestamp)
-    cur.executemany("INSERT INTO street_names VALUES(?,?)", 
+    resCur.execute("INSERT INTO metadata VALUES(?)", timestamp)
+    resCur.executemany("INSERT INTO street_names VALUES(?,?)", 
         street_names)
-    cur.executemany("INSERT INTO street_parts VALUES(?,?,?,?,?,?,?,?,?)",
+    resCur.executemany("INSERT INTO street_parts VALUES(?,?,?,?,?,?,?,?,?)",
         street_parts)
-    cur.executemany("""
+    resCur.executemany("""
         INSERT INTO street_part_coordinates 
         (str_part_id, x_coord, y_coord) VALUES(?,?,?)
         """,
         street_part_coordinates)
     
-    con.commit()
+    resCon.commit()
     
-def reading():
-    metadata = cur.execute("SELECT * FROM metadata").fetchall()
-    street_names = cur.execute("SELECT * FROM street_names").fetchall()
-    street_parts = cur.execute("SELECT * FROM street_parts").fetchall()
-    street_part_coordinates = cur.execute("SELECT * FROM street_part_coordinates").fetchall()
+def read_db():
+    metadata = resCur.execute("SELECT * FROM metadata").fetchall()
+    street_names = resCur.execute("SELECT * FROM street_names").fetchall()
+    street_parts = resCur.execute("SELECT * FROM street_parts").fetchall()
+    street_part_coordinates = resCur.execute("SELECT * FROM street_part_coordinates").fetchall()
     
     return (
         metadata,
@@ -122,10 +145,11 @@ def reading():
     )
 
 if __name__ == "__main__":
-    # street_names, street_parts, street_part_coordinates = read_raw_data()
+    street_names, street_parts, street_part_coordinates = read_raw_data_openstreetmap()
+    # street_names, street_parts, street_part_coordinates = read_raw_data_leipzig_official()
     # creation()
     # db_filling(street_names, street_parts, street_part_coordinates)
-    metadata, street_names, street_parts, street_part_coordinates = reading()
+    # metadata, street_names, street_parts, street_part_coordinates = read_db()
     
 
 a = 0
