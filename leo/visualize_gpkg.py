@@ -1,35 +1,8 @@
 import svgwrite
 from svgwrite import mm
-import sqlite3
 from shapely import from_wkb
 import numpy as np
 
-def read_lines_openstreetmap():
-    osmCon = sqlite3.connect('openstreet_raw.gpkg')
-    osmCur = osmCon.cursor()
-    
-    tableNames = osmCur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;").fetchall()
-    tables = []
-    
-    if False:
-        for table in tableNames:
-            tableName = str(table[0])
-            print(tableName)
-            print("-----------")
-            columns = osmCur.execute(f"PRAGMA table_info({tableName})").fetchall()
-            for col in columns:
-                # print('{}{}{}'.format(col[0].ljust(8),col[1].ljust(8),col[2].ljust(8)))
-                print(f"{col[0]:<8}{col[1]:<32}{col[2]:<8}")
-            a = 0
-            # tables.append({
-            #     tableName : osmCur.execute(f"SELECT * FROM {tableName}").fetchall()
-            # })
-        
-    lines = osmCur.execute("SELECT * FROM lines WHERE geom IS NOT NULL").fetchall()
-    # minMax = osmCur.execute("SELECT * FROM gpkg_contents").fetchall()
-    
-    osmCon.close()
-    return lines
 
 def drawLinesSvg(lines, min_x, min_y, max_x, max_y):
     dwg = svgwrite.Drawing('1.svg', profile='tiny')
@@ -82,24 +55,3 @@ def drawLinesSvg(lines, min_x, min_y, max_x, max_y):
         
     dwg.save()
     a = 0
-
-if __name__ == "__main__":
-    """
-        lines
-        -----------
-        0       id                              INTEGER 
-        1       geom                            LINESTRING
-        2       osm_id                          TEXT    
-        3       name                            TEXT    
-        4       highway                         TEXT    
-        5       waterway                        TEXT    
-        6       aerialway                       TEXT    
-        7       barrier                         TEXT    
-        8       man_made                        TEXT    
-        9       railway                         TEXT    
-        10      z_order                         MEDIUMINT
-        11      other_tags                      TEXT   
-    """
-    min_x, min_y, max_x, max_y = 10.73447889999999, 48.6165844, 13.05009109999999, 51.7994927
-    lines = read_lines_openstreetmap()
-    drawLinesSvg(lines, min_x, min_y, max_x, max_y)
